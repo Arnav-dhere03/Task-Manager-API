@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-
+from math import ceil
 from pydantic import (
     BaseModel,
     Field,
@@ -87,3 +87,14 @@ class TaskFilter(BaseModel):
     project_id: Optional[int] = None
 
     assigned_user_id: Optional[int] = None
+
+class PaginatedTaskResponse(BaseModel):
+    items: list[TaskResponse]
+
+    total: int
+
+    page: int
+
+    size: int
+
+    pages: int

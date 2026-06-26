@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from app.models.task import Task
+from app.models.task import Task,TaskPriority,TaskStatus
 from app.models.project import Project
 from app.models.user import User
 
@@ -150,3 +150,58 @@ def can_assign_user_to_project_task(
         return True
 
     return user in project.members
+
+def get_filtered_tasks(
+    db: Session,
+    user_id: int,
+    status=None,
+    priority=None,
+    project_id=None,
+    page: int = 1,
+    size: int = 10
+):
+    query = db.query(Task).filter(
+        (Task.creator_id == user_id)
+        |
+        (Task.assigned_user_id == user_id)
+    )
+
+    if status:
+        query = query.filter(
+            Task.status == status
+        )
+
+    if priority:
+        query = query.filter(
+            Task.priority == priority
+        )
+
+    if project_id:
+        query = query.filter(
+            Task.project_id == project_id
+        )
+
+    total = query.count()
+
+    pages = (
+        total + size - 1
+    ) // size
+
+    offset = (
+        page - 1
+    ) * size
+
+    items = (
+        query
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages
+    }

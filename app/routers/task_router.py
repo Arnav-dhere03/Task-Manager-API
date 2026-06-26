@@ -2,7 +2,8 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
-    status
+    status,
+    Query
 )
 
 from sqlalchemy.orm import Session
@@ -10,6 +11,10 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 
 from app.models.user import User
+from app.models.task import (
+    TaskStatus,
+    TaskPriority
+)
 
 from app.dependencies.auth_dependency import (
     get_current_user
@@ -18,7 +23,8 @@ from app.dependencies.auth_dependency import (
 from app.schemas.task import (
     TaskCreate,
     TaskUpdate,
-    TaskResponse
+    TaskResponse,
+    PaginatedTaskResponse
 )
 
 from app.services.task_service import (
@@ -28,7 +34,8 @@ from app.services.task_service import (
     get_project_tasks,
     update_task,
     delete_task,
-    can_access_task
+    can_access_task,
+    get_filtered_tasks
 )
 
 from app.services.project_service import (
@@ -65,15 +72,34 @@ def create_new_task(
     
 @router.get(
     "",
-    response_model=list[TaskResponse]
+    response_model=PaginatedTaskResponse
 )
 def get_tasks(
+    status: TaskStatus | None = None,
+    priority: TaskPriority | None = None,
+    project_id: int | None = None,
+
+    page: int = Query(
+        1,
+        ge=1
+    ),
+
+    size: int = Query(
+        10,
+        ge=1,
+        le=100
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return get_user_tasks(
-        db,
-        current_user.id
+    return get_filtered_tasks(
+    db=db,
+    user_id=current_user.id,
+    status=status,
+    priority=priority,
+    project_id=project_id,
+    page=page,
+    size=size
     )
 
 @router.get(
