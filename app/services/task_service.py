@@ -4,7 +4,10 @@ from sqlalchemy import and_
 from app.models.task import Task,TaskPriority,TaskStatus
 from app.models.project import Project
 from app.models.user import User
-
+from app.services.project_service import (
+    is_project_owner,
+    is_project_member
+)
 from app.schemas.task import (
     TaskCreate,
     TaskUpdate
@@ -25,43 +28,52 @@ def create_task(
     task_data: TaskCreate,
     creator_id: int
 ):
-    if task_data.project_id:
+    if task_data.project_id is not None:
 
         project = (
             db.query(Project)
-            .filter(
-                Project.id == task_data.project_id
-            )
+            .filter(Project.id == task_data.project_id)
             .first()
         )
 
         if not project:
+            raise ValueError("Project not found")
+
+        creator = (
+            db.query(User)
+            .filter(User.id == creator_id)
+            .first()
+        )
+
+        if creator is None:
+            raise ValueError("Creator not found")
+
+        if not (
+            is_project_owner(project, creator_id)
+            or is_project_member(project, creator_id)
+        ):
             raise ValueError(
-                "Project not found"
+                "You are not a member of this project."
             )
 
-        if task_data.assigned_user_id:
+        if task_data.assigned_user_id is not None:
 
-            user = (
+            assignee = (
                 db.query(User)
-                .filter(
-                    User.id == task_data.assigned_user_id
-                )
+                .filter(User.id == task_data.assigned_user_id)
                 .first()
             )
 
-            if user:
+            if assignee is None:
+                raise ValueError("Assigned user not found")
 
-                valid_assignee = (
-                    project.owner_id == user.id
-                    or
-                    user in project.members
+            if not (
+                is_project_owner(project, assignee.id)
+                or is_project_member(project, assignee.id)
+            ):
+                raise ValueError(
+                    "Assigned user is not a member of this project."
                 )
-
-                if not valid_assignee:
-                    raise ValueError(
-                        "User is not a project member"
-                    )
 
     task = Task(
         title=task_data.title,
@@ -136,10 +148,21 @@ def can_access_task(
     task: Task,
     user_id: int
 ):
+    if task.project is None:
+        return (
+            task.creator_id == user_id
+            or task.assigned_user_id == user_id
+        )
+
+    if is_project_owner(task.project, user_id):
+        return True
+
+    if is_project_member(task.project, user_id):
+        return True
+
     return (
         task.creator_id == user_id
-        or
-        task.assigned_user_id == user_id
+        or task.assigned_user_id == user_id
     )
 
 def can_assign_user_to_project_task(
