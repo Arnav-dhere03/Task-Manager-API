@@ -10,23 +10,14 @@ from app.models import (
 
 app = FastAPI(
     title="Task Manager API",
-    description="Resume-level FastAPI backend for task management, collaboration, and productivity",
+    description="FastAPI backend for task management, collaboration, and productivity",
     version="1.0.0"
 )
-
 
 @app.get("/")
 def root():
     return {
         "message": "Task Manager API is running successfully"
-    }
-
-
-@app.get("/health")
-def health_check():
-    return {
-        "status": "healthy",
-        "database": "connected"
     }
 
 app.include_router(auth_router.router)
