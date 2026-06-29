@@ -74,7 +74,8 @@ def add_member(
     add_member_to_project(
         db,
         project,
-        user
+        user,
+        current_user.id
     )
 
     return get_project_members(project)
@@ -164,7 +165,8 @@ def remove_member(
     remove_member_from_project(
         db,
         project,
-        member
+        member,
+        current_user.id
     )
 
     return get_project_members(project)

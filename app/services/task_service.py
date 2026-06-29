@@ -12,6 +12,11 @@ from app.schemas.task import (
     TaskCreate,
     TaskUpdate
 )
+from app.services.activity_service import log_activity
+from app.models.activity import (
+    ActivityAction,
+    EntityType
+)
 
 def get_task_by_id(
     db: Session,
@@ -88,7 +93,16 @@ def create_task(
     db.add(task)
     db.commit()
     db.refresh(task)
-
+    log_activity(
+        db=db,
+        user_id=creator_id,
+        action=ActivityAction.CREATE,
+        entity_type=EntityType.TASK,
+        entity_id=task.id,
+        project_id=task.project_id,
+        description=f"Created task '{task.title}'"
+    )
+    db.commit()
     return task
 
 def get_user_tasks(
@@ -119,7 +133,8 @@ def get_project_tasks(
 def update_task(
     db: Session,
     task: Task,
-    task_data: TaskUpdate
+    task_data: TaskUpdate,
+    user_id: int
 ):
     update_data = task_data.model_dump(
         exclude_unset=True
@@ -131,16 +146,34 @@ def update_task(
             field,
             value
         )
-
     db.commit()
     db.refresh(task)
-
+    log_activity(
+        db=db,
+        user_id=user_id,
+        action=ActivityAction.UPDATE,
+        entity_type=EntityType.TASK,
+        entity_id=task.id,
+        project_id=task.project_id,
+        description=f"Updated task '{task.title}'"
+    ) 
+    db.commit()
     return task
 
 def delete_task(
     db: Session,
-    task: Task
+    task: Task,
+    user_id: int
 ):
+    log_activity(
+        db=db,
+        user_id=user_id,
+        action=ActivityAction.DELETE,
+        entity_type=EntityType.TASK,
+        entity_id=task.id,
+        project_id=task.project_id,
+        description=f"Deleted task '{task.title}'"
+    )
     db.delete(task)
     db.commit()
 

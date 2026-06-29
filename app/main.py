@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import auth_router, project_member_router,projects,task_router,comment_router
+from app.routers import auth_router, project_member_router,projects,task_router,comment_router,activity_router
 from app.models import (
     User,
     Project,
@@ -25,3 +25,4 @@ app.include_router(projects.router)
 app.include_router(project_member_router.router)
 app.include_router(task_router.router)
 app.include_router(comment_router.router)
+app.include_router(activity_router.router)

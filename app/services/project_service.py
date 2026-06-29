@@ -4,7 +4,11 @@ from app.schemas.project import (
     ProjectCreate,
     ProjectUpdate
 )
-
+from app.services.activity_service import log_activity
+from app.models.activity import (
+    ActivityAction,
+    EntityType
+)
 
 def create_project(
     db: Session,
@@ -20,7 +24,17 @@ def create_project(
     db.add(new_project)
     db.commit()
     db.refresh(new_project)
+    log_activity(
+        db=db,
+        user_id=owner_id,
+        action=ActivityAction.CREATE,
+        entity_type=EntityType.PROJECT,
+        entity_id=new_project.id,
+        project_id=new_project.id,
+        description=f"Created project '{new_project.name}'"
+    )
 
+    db.commit()
     return new_project
 
 
@@ -45,7 +59,8 @@ def get_project_by_id(
 def update_project(
     db: Session,
     project: Project,
-    project_data: ProjectUpdate
+    project_data: ProjectUpdate,
+    user_id: int
 ):
     if project_data.name is not None:
         project.name = project_data.name
@@ -55,14 +70,36 @@ def update_project(
 
     db.commit()
     db.refresh(project)
+    log_activity(
+        db=db,
+        user_id=user_id,
+        action=ActivityAction.UPDATE,
+        entity_type=EntityType.PROJECT,
+        entity_id=project.id,
+        project_id=project.id,
+        description=f"Updated project '{project.name}'"
+    )
 
+    db.commit()
+    db.refresh(project)
     return project
 
 
 def delete_project(
     db: Session,
-    project: Project
+    project: Project,
+    user_id: int
 ):
+    log_activity(
+        db=db,
+        user_id=user_id,
+        action=ActivityAction.DELETE,
+        entity_type=EntityType.PROJECT,
+        entity_id=project.id,
+        project_id=project.id,
+        description=f"Deleted project '{project.name}'"
+    )
+
     db.delete(project)
     db.commit()
 
@@ -80,4 +117,14 @@ def is_project_member(
     return any(
         member.id == user_id
         for member in project.members
+    )
+
+def can_access_project(
+    project,
+    user_id: int
+) -> bool:
+    
+    return (
+        is_project_owner(project, user_id)
+        or is_project_member(project, user_id)
     )

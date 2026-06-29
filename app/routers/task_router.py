@@ -163,7 +163,8 @@ def update_existing_task(
     return update_task(
         db,
         task,
-        task_data
+        task_data,
+        current_user.id
     )
 
 @router.delete(
@@ -194,7 +195,8 @@ def delete_existing_task(
 
     delete_task(
         db,
-        task
+        task,
+        current_user.id
     )
 
     return None

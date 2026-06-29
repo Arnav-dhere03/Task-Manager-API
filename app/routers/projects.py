@@ -97,7 +97,8 @@ def update_existing_project(
     return update_project(
         db,
         project,
-        project_data
+        project_data,
+        current_user.id
     )
 
 
@@ -118,4 +119,4 @@ def delete_existing_project(
     if not is_project_owner(project, current_user.id):
         raise HTTPException(403, "Not authorized")
 
-    delete_project(db, project)
+    delete_project(db, project, current_user.id)
