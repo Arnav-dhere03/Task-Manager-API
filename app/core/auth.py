@@ -15,9 +15,7 @@ oauth2_scheme = OAuth2PasswordBearer(
 
 
 def create_access_token(data: dict) -> str:
-    """
-    Creates JWT access token
-    """
+
     to_encode = data.copy()
 
     expire = datetime.now(timezone.utc) + timedelta(
